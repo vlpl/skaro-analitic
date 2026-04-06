@@ -6,6 +6,10 @@ export default {
 	'app.not_initialized': 'Skaro не инициализирован. Выполните',
 	'app.not_initialized_cmd': 'skaro init',
 
+	// Status badges
+	'status.approved': 'Утверждён',
+	'status.not_approved': 'Не утверждён',
+
 	// Nav
 	'nav.constitution': 'Конституция',
 	'nav.architecture': 'Архитектура',
@@ -179,7 +183,7 @@ export default {
 	'task.empty': 'Задач пока нет.',
 	'task.empty_hint': 'Перейдите на вкладку План и сгенерируйте план разработки или создайте задачи вручную.',
 	'task.back': 'Назад к задачам',
-	'task.detail_title': 'Задача: {name}',
+	'task.detail_title': '{name}',
 	'task.implement_progress': 'Реализация',
 	'task.all_milestones': 'Все',
 	'task.filter_all': 'Все',
@@ -206,6 +210,14 @@ export default {
 	'log.task_deleted': 'Задача "{name}" удалена',
 	'log.tasks_reordered': 'Порядок задач обновлён',
 	'log.task_file_saved': '{file} сохранён для {name}',
+
+	// Task proposals (batch creation from chat)
+	'task_proposal.title': 'Предложенные задачи',
+	'task_proposal.created_title': 'Задачи созданы',
+	'task_proposal.confirm': 'Создать ({n})',
+	'task_proposal.creating': 'Создание...',
+	'task_proposal.preview_spec': 'Просмотр спецификации',
+	'task_proposal.batch_created': 'Создано задач: {n}',
 
 	// Phase actions
 	'action.clarify': 'Уточнить',
@@ -424,6 +436,7 @@ export default {
 	'log.arch_chat_accepted': 'Архитектура сгенерирована и сохранена',
 
 	// Settings
+	'nav.start': 'Старт',
 	'nav.stats': 'Статистика',
 	'nav.dashboard': 'Дашборд',
 	'nav.settings': 'Настройки',
@@ -459,6 +472,14 @@ export default {
 	'settings.default_llm_desc': 'Используется для всех фаз, если не задана роль.',
 	'settings.provider': 'Провайдер',
 	'settings.model': 'Модель',
+	'settings.model_select_placeholder': 'Выберите модель…',
+	'settings.model_search_placeholder': 'Поиск моделей…',
+	'settings.model_refresh': 'Обновить список моделей',
+	'settings.model_group_curated': 'Рекомендуемые',
+	'settings.model_group_all': 'Все модели',
+	'settings.model_no_results': 'Модели не найдены',
+	'settings.model_custom': 'Кастомная',
+	'settings.model_use_custom': 'Использовать "{model}" как ID модели',
 	'settings.api_key': 'API-ключ',
 	'settings.api_key_placeholder': 'sk-...',
 	'settings.api_key_hint': 'Хранится в .skaro/secrets.yaml (в gitignore)',
@@ -555,6 +576,44 @@ export default {
 	'dash.no_data': 'Нет данных.',
 	'dash.tasks_total': 'всего',
 
+	// ── Страница Старт ──
+	'start.welcome': 'Настройка проекта',
+	'start.welcome_desc': 'Пройдите каждый этап для настройки и запуска проекта. Выполняйте по порядку — каждый шаг открывает следующий.',
+
+	'start.step_constitution': 'Конституция',
+	'start.step_architecture': 'Архитектура',
+	'start.step_adr': 'Архитектурные решения (ADR)',
+	'start.step_devplan': 'План разработки',
+	'start.step_tasks': 'Задачи',
+	'start.step_review': 'Ревью проекта',
+
+	'start.desc_constitution': 'Определите правила, конвенции и ограничения для всего проекта. Конституция регулирует стиль кода, стратегию тестирования, конвенции коммитов, политики безопасности и границы допустимого для ИИ. Этот документ используется на каждом последующем этапе.',
+	'start.desc_architecture': 'Опишите высокоуровневую структуру системы: сервисы, слои, потоки данных, ключевые технологические решения. ИИ проведёт ревью черновика, предложит улучшения и укажет на потенциальные проблемы. После утверждения архитектура станет основой для всей реализации.',
+	'start.desc_adr': 'Фиксируйте ключевые технические решения как Architecture Decision Records. Каждый ADR документирует контекст, рассмотренные альтернативы и обоснование. ADR могут быть сгенерированы автоматически из утверждённой архитектуры или созданы вручную для новых решений.',
+	'start.desc_devplan': 'Разбейте проект на вехи и задачи с чёткими зависимостями и приоритетами. ИИ генерирует план на основе конституции и архитектуры, а вы его дорабатываете. После подтверждения план наполняет бэклог задач.',
+	'start.desc_tasks': 'Выполняйте план задача за задачей. Каждая задача проходит фазы: уточнение → план → реализация → тесты с помощью ИИ на каждом шаге. Код генерируется, ревьюится, тестируется и коммитится инкрементально.',
+	'start.desc_review': 'Запустите полный набор проверок по всему проекту: структурные проверки, глобальные тестовые команды, кросс-файловая согласованность. Исправьте найденные проблемы и подтвердите, что проект прошёл все проверки качества.',
+
+	'start.done': 'Готово',
+	'start.in_progress': 'В работе',
+	'start.pending': 'Ожидает',
+	'start.go_to': 'Продолжить',
+
+	'start.project_progress': 'Прогресс проекта',
+	'start.tasks_done': 'задач выполнено',
+	'start.quick_actions': 'Быстрые действия',
+	'start.action_current_task': 'Продолжить задачу',
+	'start.action_create_task': 'Создать задачу',
+	'start.action_new_feature': 'Новая фича',
+	'start.action_run_review': 'Запустить ревью',
+	'start.action_open_git': 'Git',
+
+	'start.open_git': 'Открыть',
+	'start.git_unavailable': 'Git недоступен для этого проекта.',
+	'start.git_branch': 'Ветка',
+	'start.git_staged': 'Staged',
+	'start.git_changed': 'Изменено',
+
 	// ── Git ──
 	'git.title': 'Git',
 	'git.subtitle': 'Стейджинг, коммиты, пуш и управление ветками.',
@@ -620,4 +679,41 @@ export default {
 	'autopilot.stopped_desc': 'Остановлен пользователем. Прогресс сохранён — можно перезапустить для продолжения.',
 	'autopilot.tokens_total': 'Токены за проект',
 	'autopilot.llm_thinking': 'LLM думает...',
+
+	// Chat panel (right sidebar)
+	'chat_panel.toggle': 'Панель AI-чата',
+	'chat_panel.close': 'Закрыть чат',
+	'chat_panel.open': 'Открыть AI-чат',
+	'chat_panel.ctx_architecture': 'Чат архитектуры',
+	'chat_panel.ctx_review': 'Фикс проекта',
+	'chat_panel.ctx_constitution': 'Чат конституции',
+	'chat_panel.ctx_adr': 'Чат ADR',
+	'chat_panel.ctx_adr_detail': 'ADR-{n}',
+	'chat_panel.ctx_devplan': 'Чат плана',
+	'chat_panel.ctx_features': 'Чат фичей',
+	'chat_panel.ctx_tasks': 'Чат задач',
+	'chat_panel.response_received': 'Ответ ИИ получен',
+	'chat_panel.placeholder_default': 'Спросите о проекте...',
+	'chat_panel.placeholder_constitution': 'Обсудите или предложите изменения конституции...',
+	'chat_panel.placeholder_adr': 'Обсудите ADR или предложите новое решение...',
+	'chat_panel.placeholder_adr_detail': 'Задайте вопрос об этом ADR...',
+	'chat_panel.placeholder_devplan': 'Обсудите план или предложите корректировки...',
+	'chat_panel.placeholder_features': 'Обсудите или предложите новые фичи...',
+	'chat_panel.placeholder_tasks': 'Обсудите задачи или создайте новую...',
+
+	// Attach menu (compose box)
+	'attach.title': 'Прикрепить контекст',
+	'attach.from_disk': 'Добавить файлы',
+	'attach.from_repo': 'Файлы репозитория',
+
+	// Chat model picker
+	'chat_panel.label': 'Чат',
+	'chat_model.default': 'По умолчанию',
+	'chat_model.role_architect': 'Архитектор',
+	'chat_model.role_coder': 'Разработчик',
+	'chat_model.role_reviewer': 'Ревьюер',
+	'chat_model.select': 'Выбрать модель',
+
+	// Feature
+	'feature.draft_hint': 'Используйте панель AI-чата, чтобы описать и спланировать эту фичу.',
 };

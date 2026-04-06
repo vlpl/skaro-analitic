@@ -61,26 +61,24 @@
 	}
 
 	.md-content :global(h1) {
-		font-size: 1.0625rem;
-		margin: 0.875rem 0 0.375rem;
-		padding-bottom: 0.25rem;
+		font-size: 1.3rem;
 		color: var(--tx-bright);
 	}
 
 	.md-content :global(h2) {
-		font-size: 1.5rem;
-		margin: 1.3rem 0 .7rem;
-		color: var(--or);
+		font-size: 1.2rem;
+		margin: .5rem 0 .25rem;
+        color: var(--tx-bright);
 	}
 
 	.md-content :global(h3) {
-		font-size: 1.2rem;
-		margin: 1.2rem 0 .7rem;
-		color: var(--tx-bright);
+		font-size: 1.1rem;
+		margin: .5rem 0 .25rem;
+        color: var(--tx-bright);
 	}
 
 	.md-content :global(p) {
-		margin: 1rem 0;
+		margin: .25rem 0;
 	}
 
 	.md-content :global(ul),
@@ -94,7 +92,7 @@
 
 	.md-content :global(pre) {
 		position: relative;
-		background: var(--bg2);
+		background: var(--bg-deep);
 		border-radius: var(--r);
 		padding: 1.2rem 1.5rem;
 		overflow-x: auto;
@@ -104,12 +102,12 @@
 	}
 
 	.md-content :global(code) {
-        background: rgb(from var(--or) r g b / 0.05);
-        border-radius: var(--r2);
-        padding: .08rem .2rem .1rem .2rem;
-        color: var(--or);
+        background: rgb(from var(--ac) r g b / 0.05);
+        border-radius: var(--r);
+        padding: 0 .2rem;
+        color: var(--ac);
         font-size: 1rem;
-        border: solid 1px rgb(from var(--or) r g b / 0.25);
+        border: solid 1px rgb(from var(--ac) r g b / 0.05);
 	}
 
     .md-content :global(pre > code) {
@@ -133,7 +131,7 @@
 		background: transparent;
 		border: 0.0625rem solid var(--bd);
 		border-radius: var(--r);
-		color: var(--dm);
+		color: var(--tx-dim);
 		cursor: pointer;
 		opacity: 0;
 		transition: opacity 0.15s, color 0.15s, border-color 0.15s;
@@ -149,15 +147,15 @@
 	}
 
 	.md-content :global(.copy-btn.copied) {
-		color: var(--gn-bright);
-		border-color: var(--gn-bright);
+		color: var(--ok);
+		border-color: var(--ok);
 		opacity: 1;
 	}
 
 	.md-content :global(blockquote) {
-		border-left: 0.1875rem solid var(--ac2);
+		border-left: 0.1875rem solid var(--ac);
 		padding-left: 0.625rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin: 0.375rem 0;
 	}
 
@@ -166,23 +164,22 @@
 		border-spacing: 0;
 		width: 100%;
 		margin: 0.375rem 0;
-		background: var(--bg2);
 		border-radius: var(--r);
 		overflow: hidden;
-		border: 0.0625rem solid var(--bd);
+		border: 1px solid var(--bd);
 	}
 
 	.md-content :global(thead) {
-		background: var(--sf);
+		background: var(--bd);
 	}
 
 	.md-content :global(th),
 	.md-content :global(td) {
 		border-bottom: 0.0625rem solid var(--bd);
 		border-right: 0.0625rem solid var(--bd);
-		padding: 0.25rem 0.5rem;
+		padding: 0.5rem 0.75rem;
 		text-align: left;
-		font-size: 0.8125rem;
+		font-size: 0.85rem;
 		word-wrap: break-word;
 		overflow-wrap: break-word;
 	}
@@ -199,14 +196,13 @@
 	}
 
 	.md-content :global(th) {
-		background: var(--sf);
 		color: var(--tx-bright);
 		font-weight: 600;
 	}
 
 	.md-content :global(hr) {
 		border: none;
-		border-top: 0.0625rem solid var(--bd);
+		border-top: 1px solid var(--bd);
 		margin: 0.625rem 0;
 	}
 

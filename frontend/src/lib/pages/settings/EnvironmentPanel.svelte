@@ -3,6 +3,7 @@
 	import { api } from '$lib/api/client.js';
 	import { addError } from '$lib/stores/logStore.js';
 	import { Container, Monitor, Terminal, Loader, Info, RefreshCw } from 'lucide-svelte';
+	import BtnGroup from '$lib/ui/BtnGroup.svelte';
 
 	let {
 		mode = $bindable('host'),
@@ -15,6 +16,12 @@
 
 	let detecting = $state(false);
 	let detected = $state(null);
+
+	let modeItems = $derived([
+		{ value: 'host', label: $t('settings.env_mode_host'), icon: Monitor },
+		{ value: 'docker', label: $t('settings.env_mode_docker'), icon: Container },
+		{ value: 'custom', label: $t('settings.env_mode_custom'), icon: Terminal },
+	]);
 
 	async function detect() {
 		detecting = true;
@@ -54,23 +61,9 @@
 		</div>
 	{/if}
 
-	<!-- Mode selector -->
 	<div class="form-field">
 		<span class="field-label">{$t('settings.env_mode')}</span>
-		<div class="mode-tabs">
-			<button class="tab" class:active={mode === 'host'} onclick={() => mode = 'host'}>
-				<Monitor size={14} />
-				{$t('settings.env_mode_host')}
-			</button>
-			<button class="tab" class:active={mode === 'docker'} onclick={() => mode = 'docker'}>
-				<Container size={14} />
-				{$t('settings.env_mode_docker')}
-			</button>
-			<button class="tab" class:active={mode === 'custom'} onclick={() => mode = 'custom'}>
-				<Terminal size={14} />
-				{$t('settings.env_mode_custom')}
-			</button>
-		</div>
+		<BtnGroup items={modeItems} bind:value={mode} />
 	</div>
 
 	{#if mode === 'docker'}
@@ -128,7 +121,7 @@
 
 	.card-desc {
 		font-size: 0.8125rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin-bottom: 0.875rem;
 	}
 
@@ -150,36 +143,6 @@
 		flex-shrink: 0;
 	}
 
-	.mode-tabs {
-		display: flex;
-		gap: .5rem;
-	}
-
-	.tab {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.375rem 0.875rem;
-		border: solid 0.0625rem var(--bg3);
-		border-radius: var(--r);
-		background: transparent;
-		color: var(--dm);
-		cursor: pointer;
-		font-size: 0.8125rem;
-		font-family: inherit;
-		transition: .12s;
-	}
-
-	.tab:hover {
-		color: var(--tx);
-	}
-
-	.tab.active {
-		color: var(--ac);
-		border: solid 0.0625rem var(--ac);
-		font-weight: 600;
-	}
-
 	.form-grid-2 {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -199,7 +162,7 @@
 	.form-field .field-label {
 		display: block;
 		font-size: 0.6875rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		text-transform: uppercase;
 		letter-spacing: 0.03rem;
 		margin-bottom: 0.25rem;
@@ -210,7 +173,7 @@
 	.form-field select {
 		width: 100%;
 		padding: .7rem;
-		background-color: var(--bg2);
+		background-color: var(--bg-deep);
 		border: 0.0625rem solid var(--bg);
 		border-radius: var(--r2);
 		color: var(--tx);
@@ -227,13 +190,13 @@
 	.field-hint {
 		display: block;
 		font-size: 0.75rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin-top: 0.25rem;
 	}
 
 	.mode-desc {
 		font-size: 0.8125rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin-top: 0.5rem;
 	}
 
@@ -247,9 +210,9 @@
 		align-items: center;
 		gap: 0.375rem;
 		background: transparent;
-		border: 0.0625rem solid var(--bg3);
+		border: 0.0625rem solid var(--bg-high);
 		border-radius: var(--r);
-		color: var(--dm);
+		color: var(--tx-dim);
 		cursor: pointer;
 		font-family: inherit;
 		transition: .12s;

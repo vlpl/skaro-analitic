@@ -37,9 +37,18 @@
 		applyFileFn,
 		clearConversationFn,
 		onSendSuccess = () => {},
+		onCreateTasks = null,
 		errorSource = 'fix',
 		autoLoad = true,
+		modelOverride = '',
 	} = $props();
+
+	const ALLOWED_EXTENSIONS = new Set([
+		'.py','.js','.ts','.jsx','.tsx','.go','.rs','.java','.rb','.c','.cpp','.h','.hpp',
+		'.cs','.swift','.kt','.php','.lua','.r','.html','.css','.scss','.less','.vue',
+		'.svelte','.json','.yaml','.yml','.toml','.ini','.xml','.env','.conf','.md','.txt',
+		'.rst','.csv','.sql','.sh','.bat','.ps1','.dockerfile','.tf','.proto',
+	]);
 
 	let message = $state('');
 	let loading = $state(false);
@@ -55,6 +64,49 @@
 	let fileTree = $state([]);
 	let showScopeModal = $state(false);
 	let treeLoaded = $state(false);
+
+	// Attached files from disk
+	let attachedFiles = $state([]);
+	/** @type {HTMLInputElement | null} */
+	let fileInputEl = $state(null);
+
+	function handleAttachFromDisk() {
+		fileInputEl?.click();
+	}
+
+	function handleAttachFromRepo() {
+		openScopeModal();
+	}
+
+	async function handleFileInputChange(e) {
+		const files = e.target?.files;
+		if (!files?.length) return;
+
+		for (const file of files) {
+			const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+			if (!ALLOWED_EXTENSIONS.has(ext)) {
+				addError(`Unsupported file type: ${file.name}`, errorSource);
+				continue;
+			}
+			try {
+				const content = await readFileAsText(file);
+				attachedFiles = [...attachedFiles, { name: file.name, content }];
+			} catch {
+				addError(`Failed to read: ${file.name}`, errorSource);
+			}
+		}
+		// Reset input so the same file can be re-selected.
+		if (fileInputEl) fileInputEl.value = '';
+	}
+
+	function readFileAsText(file) {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = () => reject(new Error('Read failed'));
+			reader.readAsText(file);
+		});
+	}
 
 	/** @type {AbortController | null} */
 	let abortController = $state(null);
@@ -75,8 +127,8 @@
 
 	function scrollToEnd(behavior = 'instant') {
 		requestAnimationFrame(() => {
-			const main = document.querySelector('.main');
-			if (main) main.scrollTo({ top: main.scrollHeight, behavior });
+			const container = document.querySelector('.right-panel-body') || document.querySelector('.main');
+			if (container) container.scrollTo({ top: container.scrollHeight, behavior });
 		});
 	}
 
@@ -115,11 +167,13 @@
 			const history = conversation.slice(0, -1).map((turn) => ({
 				role: turn.role, content: turn.content,
 			}));
-			const result = await fixFromIssuesFn(issueIds, history, controller.signal, scopePaths);
+			const result = await fixFromIssuesFn(issueIds, history, controller.signal, scopePaths, modelOverride);
 			if (result.success) {
 				conversation = [...conversation, {
 					role: 'assistant', content: result.message,
-					files: result.files || {}, turnIndex: conversation.length,
+					files: result.files || {},
+					taskProposals: result.task_proposals || [],
+					turnIndex: conversation.length,
 				}];
 				onSendSuccess();
 			} else {
@@ -207,6 +261,18 @@
 		const text = message.trim();
 		if (!text || loading) return;
 		loading = true;
+
+		// Build message with attached files prepended.
+		let fullMessage = text;
+		if (attachedFiles.length > 0) {
+			const fileParts = attachedFiles.map(f =>
+				`--- ATTACHED FILE: ${f.name} ---\n${f.content}\n--- END ATTACHED FILE ---`
+			);
+			fullMessage = fileParts.join('\n\n') + '\n\n' + text;
+			// Clear attached files after sending.
+			attachedFiles = [];
+		}
+
 		message = '';
 		conversation = [...conversation, { role: 'user', content: text }];
 
@@ -215,11 +281,13 @@
 
 		try {
 			const history = conversation.slice(0, -1).map((turn) => ({ role: turn.role, content: turn.content }));
-			const result = await sendMessageFn(text, history, controller.signal, scopePaths);
+			const result = await sendMessageFn(fullMessage, history, controller.signal, scopePaths, modelOverride);
 			if (result.success) {
 				conversation = [...conversation, {
 					role: 'assistant', content: result.message,
-					files: result.files || {}, turnIndex: conversation.length,
+					files: result.files || {},
+					taskProposals: result.task_proposals || [],
+					turnIndex: conversation.length,
 				}];
 				onSendSuccess();
 			} else {
@@ -267,6 +335,11 @@
 		};
 	}
 
+	async function handleCreateTasks(turnIndex, tasks) {
+		if (!onCreateTasks) return;
+		await onCreateTasks(tasks);
+	}
+
 	async function clearConversation() {
 		conversation = [];
 		appliedFiles = {};
@@ -301,7 +374,14 @@
 {:else if conversation.length > 0}
 	<div class="fix-conversation">
 		{#each conversation as turn, i}
-			<ChatMessage {turn} index={i} {appliedFiles} {modelDisplay} onOpenDiff={openDiff} />
+			<ChatMessage
+				{turn}
+				index={i}
+				{appliedFiles}
+				{modelDisplay}
+				onOpenDiff={openDiff}
+				onCreateTasks={onCreateTasks ? handleCreateTasks : null}
+			/>
 		{/each}
 		{#if loading}
 			<div class="turn turn-assistant">
@@ -344,34 +424,46 @@
 		bind:message
 		{loading}
 		{tokenDisplay}
-		{modelDisplay}
 		{placeholder}
-		showScope={scopeEnabled}
+		showAttach={scopeEnabled}
 		scopeCount={scopePaths.length}
+		attachedFileCount={attachedFiles.length}
 		onSend={sendMessage}
 		onCancel={cancelRequest}
-		onScopeClick={openScopeModal}
+		onAttachFromDisk={handleAttachFromDisk}
+		onAttachFromRepo={handleAttachFromRepo}
 	/>
 </div>
+
+<!-- Hidden file input for disk file selection -->
+<input
+	type="file"
+	multiple
+	accept=".py,.js,.ts,.jsx,.tsx,.go,.rs,.java,.rb,.c,.cpp,.h,.hpp,.cs,.swift,.kt,.php,.lua,.r,.html,.css,.scss,.less,.vue,.svelte,.json,.yaml,.yml,.toml,.ini,.xml,.env,.conf,.md,.txt,.rst,.csv,.sql,.sh,.bat,.ps1,.dockerfile,.tf,.proto"
+	bind:this={fileInputEl}
+	onchange={handleFileInputChange}
+	style="display: none;"
+/>
 
 <style>
 	.fix-conversation { padding-bottom: 1rem; }
 
 	.fix-bar {
-		position: sticky; bottom: 0;
-		background: var(--bg);
+		position: absolute; bottom: 0;
+        width: calc(100% - 4rem);
+		background: linear-gradient(to bottom, transparent, var(--bg-soft));
 		padding: 0; z-index: 10;
 	}
 
 	.thinking {
 		display: flex; align-items: center; gap: 0.375rem;
-		color: var(--dm); font-size: 0.8125rem;
+		color: var(--tx-dim); font-size: 0.8125rem;
 	}
 
 	.turn-label {
 		font-size: 0.6875rem; font-weight: 700;
 		text-transform: uppercase; letter-spacing: .05em;
-		margin-bottom: 0.25rem; color: var(--or);
+		margin-bottom: 0.25rem; color: var(--ac);
 	}
 
 	.clear-row {
@@ -384,7 +476,7 @@
 	/* ── Skeleton ── */
 	.skel-turn { pointer-events: none; }
 	.skel-pulse {
-		background: var(--bg2); border-radius: var(--r);
+		background: var(--bg-deep); border-radius: var(--r);
 		animation: skel-shimmer 1.5s ease-in-out infinite;
 	}
 	@keyframes skel-shimmer { 0%, 100% { opacity: .4; } 50% { opacity: .15; } }
@@ -393,9 +485,9 @@
 
 	.skel-body-user {
 		max-width: 80%; margin-left: auto;
-		background: var(--bg2); border-radius: var(--r); padding: 1.2rem;
+		background: var(--bg-deep); border-radius: var(--r); padding: 1.2rem;
 	}
-	.skel-body-user .skel-line { background: var(--bg3); }
+	.skel-body-user .skel-line { background: var(--bg-high); }
 	.skel-body-assistant { padding: .25rem 0; }
 
 	.skel-file {

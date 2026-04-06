@@ -4,14 +4,21 @@
 	import { addLog, addError } from '$lib/stores/logStore.js';
 	import { invalidate } from '$lib/api/cache.js';
 	import { api } from '$lib/api/client.js';
-	import { Package, Plus, GripVertical, Rocket } from 'lucide-svelte';
-	import TaskCard from '$lib/pages/tasks/TaskCard.svelte';
+	import { Plus, GripVertical, Rocket } from 'lucide-svelte';
+	import TaskListItem from '$lib/pages/tasks/TaskListItem.svelte';
 	import CreateTaskModal from '$lib/pages/tasks/CreateTaskModal.svelte';
 	import AutopilotOverlay from '$lib/pages/tasks/AutopilotOverlay.svelte';
+	import BtnGroup from '$lib/ui/BtnGroup.svelte';
 	import { startAutopilot, autopilotRunning } from '$lib/stores/autopilotStore.js';
 
 	let activeTab = $state('__all__');
 	let statusFilter = $state('all');
+
+	let statusFilterItems = $derived([
+		{ value: 'all', label: $t('task.filter_all') },
+		{ value: 'active', label: $t('task.filter_active') },
+		{ value: 'done', label: $t('task.filter_done') },
+	]);
 
 	// ── Create modal ──
 	let showCreateModal = $state(false);
@@ -68,6 +75,15 @@
 	let filteredTasks = $derived.by(() =>
 		applyStatusFilter(tasksForTab(activeTab))
 	);
+
+	/** Name of the first non-done task — only this one gets the "active" highlight. */
+	let firstActiveName = $derived.by(() => {
+		const tasks = filteredTasks;
+		for (const task of tasks) {
+			if (!isTaskDone(task)) return task.name;
+		}
+		return '';
+	});
 
 	/** DnD is available when status filter is "all" (so ordering is unambiguous). */
 	let canReorder = $derived(statusFilter === 'all');
@@ -184,41 +200,29 @@
 <div class="page-with-tabs">
 	<div class="main-header">
 		<div class="header-left">
-			<h2><Package size={24} /> {$t('task.title')}</h2>
-			<p>{$t('task.subtitle')}</p>
+			<h2>{$t('task.title')}</h2>
 		</div>
 		<div class="header-right">
-			{#if $status?.tasks?.length}
-				<div class="status-filters">
-					<button
-						class="filter-btn"
-						class:active={statusFilter === 'all'}
-						onclick={() => statusFilter = 'all'}
-					>{$t('task.filter_all')}</button>
-					<button
-						class="filter-btn"
-						class:active={statusFilter === 'active'}
-						onclick={() => statusFilter = 'active'}
-					>{$t('task.filter_active')}</button>
-					<button
-						class="filter-btn"
-						class:active={statusFilter === 'done'}
-						onclick={() => statusFilter = 'done'}
-					>{$t('task.filter_done')}</button>
-				</div>
-			{/if}
-			{#if hasActiveTasks}
-				<button
-					class="btn btn-autopilot"
-					disabled={$autopilotRunning}
-					onclick={startAutopilot}
-				>
-					<Rocket size={14} /> {$t('autopilot.run_all')}
-				</button>
-			{/if}
-			<button class="btn btn-primary" onclick={() => showCreateModal = true}>
-				<Plus size={14} /> {$t('task.create')}
-			</button>
+            <div class="header-right-group">
+                {#if $status?.tasks?.length}
+                    <BtnGroup items={statusFilterItems} bind:value={statusFilter} />
+                {/if}
+
+                <div class="task-actions">
+                    {#if hasActiveTasks}
+                        <button
+                                class="btn btn-autopilot"
+                                disabled={$autopilotRunning}
+                                onclick={startAutopilot}
+                        >
+                            <Rocket size={14} /> {$t('autopilot.run_all')}
+                        </button>
+                    {/if}
+                    <button class="btn btn-primary" onclick={() => showCreateModal = true}>
+                        <Plus size={14} /> {$t('task.create')}
+                    </button>
+                </div>
+            </div>
 		</div>
 	</div>
 
@@ -247,7 +251,7 @@
 					</button>
 				{/each}
 			</nav>
-			<div class="milestone-tabs-content" role="list">
+			<div class="milestone-tabs-content roadmap" role="list">
 				{#each filteredTasks as task, i (task.name)}
 					{@const isDragging = dragIndex === i}
 					{@const isOver = overIndex === i && dragIndex !== i}
@@ -270,7 +274,13 @@
 							<span class="drag-grip"><GripVertical size={16} /></span>
 						{/if}
 						<div class="drag-card-wrap">
-							<TaskCard {task} href="/tasks/{encodeURIComponent(task.name)}" />
+							<TaskListItem
+								{task}
+								href="/tasks/{encodeURIComponent(task.name)}"
+								isFirst={i === 0}
+								isLast={i === filteredTasks.length - 1}
+								isActive={task.name === firstActiveName}
+							/>
 						</div>
 					</div>
 				{/each}
@@ -300,13 +310,11 @@
 <style>
 	.main-header {
 		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
 		gap: 1rem;
 	}
 
 	.header-left {
-		min-width: 0;
+		width: 12rem;
 	}
 
 	.header-right {
@@ -314,58 +322,40 @@
 		align-items: center;
 		gap: 0.75rem;
 		flex-shrink: 0;
-		padding-top: 0.25rem;
+        padding-left: 2.2rem;
+        flex: 1 1 0;
+        min-width: 0;
 	}
 
-	/* Status filter buttons */
-	.status-filters {
-		display: flex;
-		gap: 0.25rem;
-		align-items: center;
-	}
+    .header-right-group {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+    }
 
-	.filter-btn {
-		padding: 0.3125rem 0.75rem;
-		border: 0.0625rem solid var(--bd);
-		border-radius: var(--r);
-		background: none;
-		color: var(--dm);
-		font-size: 0.8125rem;
-		font-family: inherit;
-		cursor: pointer;
-		transition: background .1s, color .1s, border-color .1s;
-		white-space: nowrap;
-	}
-
-	.filter-btn:hover {
-		background: var(--bg2);
-		color: var(--tx-bright);
-	}
-
-	.filter-btn.active {
-		background: var(--bg2);
-		color: var(--tx-bright);
-		border-color: var(--ac);
-	}
+    .task-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
 
 	/* Layout */
 	.milestone-tabs-layout {
 		display: flex;
 		gap: 1.5rem;
-		margin-top: 1.5rem;
+		margin-top: 1rem;
 	}
 
 	.milestone-tabs-nav {
 		position: sticky;
 		top: 0;
-		width: 14rem;
+		width: 12rem;
 		flex-shrink: 0;
 		align-self: flex-start;
 		display: flex;
 		flex-direction: column;
-		gap: .2rem;
+		gap: .1rem;
 		padding: 0;
-		padding-top: 1rem;
 	}
 
 	/* Tab items */
@@ -375,7 +365,7 @@
 		justify-content: space-between;
 		gap: 0.5rem;
 		width: 100%;
-		padding: .75rem;
+		padding: .5rem;
 		border: none;
 		border-radius: var(--r);
 		background: none;
@@ -388,11 +378,11 @@
 	}
 
 	.tab-item:hover {
-		background: var(--bg2);
+		background: var(--bg-deep);
 	}
 
 	.tab-item.active {
-		background: var(--bg2);
+		background: var(--bg-deep);
 		color: var(--tx-bright);
 	}
 
@@ -411,7 +401,7 @@
 		padding: 0 0.375rem;
 		border-radius: 0.5rem;
 		background: var(--sf);
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-size: 0.75rem;
 		font-family: var(--font-ui);
 		line-height: 1.25rem;
@@ -430,7 +420,12 @@
 		min-width: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0;
+	}
+
+	/* Roadmap continuous connector layout */
+	.roadmap {
+		position: relative;
 	}
 
 	/* ── Drag & Drop ── */
@@ -454,7 +449,7 @@
 		justify-content: center;
 		width: 1.75rem;
 		flex-shrink: 0;
-		color: var(--dm2);
+		color: var(--tx-dim);
 		cursor: grab;
 		opacity: 0;
 		transition: opacity .15s;
@@ -488,7 +483,7 @@
 	/* Autopilot button */
 	.btn-autopilot {
 		background: linear-gradient(135deg, rgba(88, 157, 246, 0.12), rgba(152, 118, 170, 0.12));
-		border: 1px solid var(--ac-dim);
+		border: 1px solid var(--ac);
 		color: var(--ac);
 		transition: all 0.2s;
 	}

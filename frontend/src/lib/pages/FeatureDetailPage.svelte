@@ -1,15 +1,16 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { onMount, onDestroy } from 'svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { api } from '$lib/api/client.js';
 	import { status } from '$lib/stores/statusStore.js';
 	import { addLog, addError } from '$lib/stores/logStore.js';
 	import { invalidate } from '$lib/api/cache.js';
-	import { ArrowLeft, Loader2, AlertTriangle, Pencil, Sparkles } from 'lucide-svelte';
+	import { ArrowLeft, Loader2, AlertTriangle, Pencil, Sparkles, MessageSquare } from 'lucide-svelte';
 	import FileTabs from '$lib/ui/FileTabs.svelte';
 	import MdEditor from '$lib/ui/md-editor/MdEditor.svelte';
 	import FeatureInfo from '$lib/pages/features/FeatureInfo.svelte';
-	import FeatureChat from '$lib/pages/features/FeatureChat.svelte';
+	import { openChatPanel } from '$lib/stores/chatPanelStore.js';
 
 	let { slug = '' } = $props();
 
@@ -19,6 +20,19 @@
 	let activeFileTab = $state('');
 	let tabInitialized = false;
 	let showEditor = $state(false);
+
+	// Listen for feature-confirmed from RightPanel's FeatureChat
+	function handleFeatureConfirmedEvent(e) {
+		if (e.detail?.slug === slug) handleConfirmed();
+	}
+
+	onMount(() => {
+		window.addEventListener('skaro:feature-confirmed', handleFeatureConfirmedEvent);
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('skaro:feature-confirmed', handleFeatureConfirmedEvent);
+	});
 
 	// Reset on slug change — same pattern as TaskDetail
 	$effect(() => {
@@ -58,14 +72,18 @@
 
 	let isDraft = $derived(feature?.status === 'draft');
 
+	// Auto-open chat panel for draft features (replaces old chat tab behavior)
+	$effect(() => {
+		if (isDraft) openChatPanel();
+	});
+
 	// ── Tabs — same pattern as TaskDetail.fileTabs ──
 	let fileTabs = $derived.by(() => {
 		if (!feature) return [];
-		if (isDraft) return [{ id: 'chat', label: $t('feature.tab_chat') }];
+		if (isDraft) return [];
 		return [
 			{ id: 'info', label: $t('feature.tab_info') },
 			{ id: 'plan', label: $t('feature.tab_plan') },
-			{ id: 'chat', label: $t('feature.tab_chat') },
 		];
 	});
 
@@ -81,7 +99,6 @@
 	let activeContent = $derived.by(() => {
 		if (!feature) return '';
 		const id = activeFileTab || fileTabs[0]?.id || '';
-		if (id === 'chat') return '';
 		if (id === 'info') return '';
 		if (id === 'plan') return feature.plan || `*${$t('feature.no_plan')}*`;
 		return '';
@@ -114,7 +131,6 @@
 
 		<div class="main-header">
 			<h2>
-				<span class="status-icon"><Sparkles size={24} /></span>
 				{displayTitle}
 			</h2>
 			<span class="badge {statusBadgeClass(feature.status)}">
@@ -141,11 +157,16 @@
 			{#snippet infoSlot()}
 				<FeatureInfo {feature} />
 			{/snippet}
-
-			{#snippet chatSlot()}
-				<FeatureChat {slug} {isDraft} onConfirmed={handleConfirmed} />
-			{/snippet}
 		</FileTabs>
+
+		{#if isDraft}
+			<div class="draft-hint">
+				<p>{$t('feature.draft_hint')}</p>
+				<button class="btn btn-primary" onclick={openChatPanel}>
+					<MessageSquare size={14} /> {$t('chat_panel.open')}
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	{#if showEditor}
@@ -162,7 +183,7 @@
 
 	.back {
 		display: inline-flex; align-items: center; gap: 0.25rem;
-		color: var(--dm); font-size: 0.8125rem; cursor: pointer; margin-bottom: 0.75rem;
+		color: var(--tx-dim); font-size: 0.8125rem; cursor: pointer; margin-bottom: 0.75rem;
 		background: none; border: none; padding: 0; font-family: inherit;
 	}
 	.back:hover { color: var(--ac); }
@@ -194,16 +215,27 @@
 		flex-shrink: 0;
 	}
 
-	.badge-draft { background: rgba(130, 130, 160, .12); color: var(--dm); }
-	.badge-planned { background: rgba(187, 181, 41, .12); color: var(--yl); }
+	.badge-draft { background: rgba(130, 130, 160, .12); color: var(--tx-dim); }
+	.badge-planned { background: rgba(187, 181, 41, .12); color: var(--warn); }
 	.badge-progress { background: rgba(26, 165, 194, .15); color: var(--ac); }
-	.badge-done { background: rgba(106, 135, 89, .15); color: var(--gn-bright); }
-	.badge-cancelled { background: rgba(180, 80, 80, .12); color: var(--rd); }
+	.badge-done { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+	.badge-cancelled { background: rgba(180, 80, 80, .12); color: var(--err); }
 
 	.content-actions {
 		display: flex;
 		gap: 0.5rem;
 		justify-content: flex-end;
+		margin-bottom: 0.75rem;
+	}
+
+	.draft-hint {
+		text-align: center;
+		padding: 2rem 1rem;
+		color: var(--tx-dim);
+		font-size: 0.875rem;
+	}
+
+	.draft-hint p {
 		margin-bottom: 0.75rem;
 	}
 </style>

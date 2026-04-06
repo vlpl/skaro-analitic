@@ -116,7 +116,7 @@
 	.proposal-card {
 		border: 0.0625rem solid var(--ac);
 		border-radius: var(--r);
-		background: var(--bg2);
+		background: var(--bg-deep);
 		margin-bottom: 1rem;
 		overflow: hidden;
 	}
@@ -148,7 +148,7 @@
 
 	.field-label {
 		font-size: 0.8125rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-weight: 500;
 	}
 
@@ -164,7 +164,7 @@
 	}
 	input[type="text"]:focus, textarea:focus {
 		outline: none;
-		border-color: var(--bd-focus);
+		border-color: var(--ac);
 	}
 
 	.task-list {
@@ -197,7 +197,7 @@
 	.task-milestone {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin-left: auto;
 	}
 	.task-desc {

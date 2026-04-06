@@ -24,14 +24,14 @@
 </script>
 
 <div class="main-header">
-	<h2><BarChart3 size={24} /> {$t('stats.title')}</h2>
+	<h2>{$t('stats.title')}</h2>
 	<p>{$t('stats.subtitle')}</p>
 </div>
 
 {#if loading}
 	<div class="loading-text"><Loader size={14} class="spin" /> {$t('app.loading')}</div>
 {:else if error}
-	<div class="card"><p style="color:var(--rd)">{error}</p></div>
+	<div class="card"><p style="color:var(--err)">{error}</p></div>
 {:else if stats}
 	<!-- Summary cards -->
 	<div class="summary-grid">

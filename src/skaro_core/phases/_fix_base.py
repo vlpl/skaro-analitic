@@ -32,6 +32,9 @@ _OUTPUT_FORMAT = (
     "--- END FILE ---\n\n"
     "Output the COMPLETE file content, not just the diff. "
     "Include ALL changed files. Use relative paths from project root.\n\n"
+    "⚠️ You MUST use the --- FILE: / --- END FILE --- markers shown above. "
+    "Do NOT wrap code in ```python, ```javascript or any other markdown "
+    "code fences — those will NOT be parsed. Only the --- FILE: --- format works.\n\n"
     "CRITICAL: Only use Path B if the root cause is genuinely in the source code. "
     "If tests fail because of wrong commands, missing dependencies, wrong environment, "
     "or incorrect paths — that is Path A. Never rewrite source code to work around "
@@ -123,12 +126,8 @@ class ConversationalFixBase(BasePhase):
                     )
                 )
 
-        # Replay conversation history
-        for turn in conversation:
-            role = turn.get("role", "user")
-            content = turn.get("content", "")
-            if role in ("user", "assistant") and content.strip():
-                messages.append(LLMMessage(role=role, content=content))
+        # Replay conversation history (file blocks stripped, tail cached).
+        self._replay_conversation(messages, conversation)
 
         # Current user message (+ language reminder)
         final_message = user_message
@@ -196,13 +195,14 @@ class ConversationalFixBase(BasePhase):
     # ── Conversation enrichment ────────────────────────
 
     def enrich_conversation(self, conversation: list[dict]) -> list[dict]:
-        """Re-parse file blocks from assistant messages and attach diffs.
+        """Re-parse file blocks and task proposals from assistant messages.
 
-        When a conversation is loaded from JSON, the ``files`` field is not
-        persisted.  This method walks each assistant turn, extracts proposed
-        file blocks via :meth:`_parse_file_blocks`, computes diffs against
-        the current state on disk, and returns a new list with ``files``
-        and ``turnIndex`` attached to every assistant turn.
+        When a conversation is loaded from JSON, the ``files`` and
+        ``taskProposals`` fields are not persisted.  This method walks each
+        assistant turn, extracts proposed file blocks and task proposals,
+        computes diffs against the current state on disk, and returns a new
+        list with ``files``, ``taskProposals``, and ``turnIndex`` attached
+        to every assistant turn.
         """
         enriched: list[dict] = []
         for i, turn in enumerate(conversation):
@@ -232,9 +232,141 @@ class ConversationalFixBase(BasePhase):
                             "truncated": True,
                         }
                     turn_copy["files"] = file_diffs
+                # Task proposals
+                task_proposals = self._parse_task_proposals(content)
+                if task_proposals:
+                    turn_copy["taskProposals"] = task_proposals
                 turn_copy["turnIndex"] = i
             enriched.append(turn_copy)
         return enriched
+
+    # ── Conversation replay helpers ────────────────────
+
+    @staticmethod
+    def _strip_all_file_blocks(text: str) -> str:
+        """Remove every ``--- FILE: … --- END FILE ---`` block from *text*.
+
+        Keeps the surrounding prose so the LLM still sees the explanation
+        that accompanied the code, but not the (potentially huge) inline
+        file content that is already available via scope context.
+        """
+        lines = text.splitlines(True)
+        result: list[str] = []
+        i = 0
+        while i < len(lines):
+            stripped = lines[i].strip()
+            if stripped.startswith("--- FILE:") and stripped.endswith("---"):
+                # Skip until the closing marker or end of text.
+                i += 1
+                while i < len(lines):
+                    if lines[i].strip() == "--- END FILE ---":
+                        i += 1
+                        break
+                    i += 1
+            else:
+                result.append(lines[i])
+                i += 1
+        return "".join(result)
+
+    @staticmethod
+    def _parse_task_proposals(text: str) -> list[dict]:
+        """Parse ``--- TASKS --- ... --- END TASKS ---`` blocks from LLM output.
+
+        Returns a list of task dicts with ``name``, ``milestone``, ``spec``.
+        """
+        lines = text.splitlines()
+        i = 0
+        proposals: list[dict] = []
+        while i < len(lines):
+            stripped = lines[i].strip()
+            if stripped == "--- TASKS ---":
+                block_lines: list[str] = []
+                i += 1
+                while i < len(lines):
+                    if lines[i].strip() == "--- END TASKS ---":
+                        break
+                    block_lines.append(lines[i])
+                    i += 1
+                raw = "\n".join(block_lines).strip()
+                if raw:
+                    try:
+                        parsed = json.loads(raw)
+                        if isinstance(parsed, list):
+                            for item in parsed:
+                                if isinstance(item, dict) and item.get("name"):
+                                    proposals.append({
+                                        "name": item["name"],
+                                        "milestone": item.get("milestone", ""),
+                                        "spec": item.get("spec", ""),
+                                    })
+                    except (json.JSONDecodeError, KeyError):
+                        pass
+            i += 1
+        return proposals
+
+    @staticmethod
+    def _strip_task_proposals(text: str) -> str:
+        """Remove ``--- TASKS ---`` blocks from visible text."""
+        lines = text.splitlines(True)
+        result: list[str] = []
+        i = 0
+        while i < len(lines):
+            stripped = lines[i].strip()
+            if stripped == "--- TASKS ---":
+                i += 1
+                while i < len(lines):
+                    if lines[i].strip() == "--- END TASKS ---":
+                        i += 1
+                        break
+                    i += 1
+            else:
+                result.append(lines[i])
+                i += 1
+        return "".join(result)
+
+    def _replay_conversation(
+        self,
+        messages: list[LLMMessage],
+        conversation: list[dict],
+    ) -> None:
+        """Replay prior conversation turns into *messages*.
+
+        Two optimisations applied:
+
+        1. **Strip file blocks** — assistant turns often contain full file
+           contents inside ``--- FILE: … --- END FILE ---`` markers.  These
+           are removed because the LLM already receives the current file
+           state through scope / extra context.  This alone saves 50-80 %
+           of history tokens in a typical fix session.
+
+        2. **Prompt-cache the old prefix** — the last replayed turn is
+           marked ``cache=True`` so providers that support prompt caching
+           (Anthropic) can reuse the ever-growing conversation prefix
+           across successive calls (90 % read discount).
+        """
+        turns: list[LLMMessage] = []
+        for turn in conversation:
+            role = turn.get("role", "user")
+            content = turn.get("content", "")
+            if role not in ("user", "assistant") or not content.strip():
+                continue
+            if role == "assistant":
+                content = self._strip_all_file_blocks(content)
+                content = self._strip_task_proposals(content)
+            if not content.strip():
+                continue
+            turns.append(LLMMessage(role=role, content=content))
+
+        # Mark the last replayed turn as a cache breakpoint so that
+        # the entire conversation prefix is prompt-cached on the next call.
+        if turns:
+            turns[-1] = LLMMessage(
+                role=turns[-1].role,
+                content=turns[-1].content,
+                cache=True,
+            )
+
+        messages.extend(turns)
 
     # ── File I/O helpers ──────────────────────────────
 
@@ -282,7 +414,7 @@ class ConversationalFixBase(BasePhase):
             return ""
         parts = []
         for fpath, content in collected.items():
-            parts.append(f"### {fpath}\n```\n{content}\n```")
+            parts.append(f"--- FILE: {fpath} ---\n{content}\n--- END FILE ---")
         return "\n\n".join(parts)
 
     @staticmethod

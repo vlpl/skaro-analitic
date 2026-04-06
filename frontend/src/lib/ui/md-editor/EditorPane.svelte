@@ -43,7 +43,7 @@
 		font-size: 0.6875rem;
 		text-transform: uppercase;
 		letter-spacing: 0.0312rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-weight: 600;
 		padding: 0.375rem 0.75rem;
 		border-bottom: 0.0625rem solid var(--bd);
@@ -56,7 +56,7 @@
 		resize: none;
 		border: none;
 		outline: none;
-		background: var(--bg2);
+		background: var(--bg-deep);
 		color: var(--tx);
 		font-family: var(--font-ui);
 		font-size: 0.8125rem;
@@ -67,6 +67,6 @@
 	}
 
 	.editor-textarea::placeholder {
-		color: var(--dm2);
+		color: var(--tx-dim);
 	}
 </style>

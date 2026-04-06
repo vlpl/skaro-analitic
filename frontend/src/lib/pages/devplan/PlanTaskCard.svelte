@@ -19,7 +19,7 @@
 		border-radius: var(--r);
 		padding: 0.625rem 0.875rem;
 		margin-bottom: 0.5rem;
-		background: var(--bg2);
+		background: var(--bg-deep);
 	}
 
 	.plan-task h4 {
@@ -35,19 +35,19 @@
 
 	.pf-desc {
 		font-size: 0.8125rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin: 0.125rem 0 0;
 	}
 
 	.pf-deps {
 		font-size: 0.75rem;
-		color: var(--dm2);
+		color: var(--tx-dim);
 		margin-top: 0.125rem;
 	}
 
 	.prio {
 		font-size: 0.6875rem;
-		color: var(--or);
+		color: var(--ac);
 		font-family: var(--font-ui);
 	}
 </style>

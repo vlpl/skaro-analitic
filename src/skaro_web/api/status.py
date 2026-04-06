@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -15,21 +16,48 @@ from skaro_core.phases.base import SKIP_DIRS
 from skaro_core.providers import get_providers
 from skaro_web.api.deps import get_am, get_project_root
 
+_CONTEXT_RE = re.compile(
+    r"^##\s+Context\s*\n(.*?)(?=\n##\s|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+_CONTEXT_MAX_LEN = 250
+
+
+def _extract_context(am: ArtifactManager, task_name: str) -> str:
+    """Extract the Context section from a task's spec.md (up to 250 chars)."""
+    spec = am.find_and_read_task_file(task_name, "spec.md")
+    if not spec:
+        return ""
+    m = _CONTEXT_RE.search(spec)
+    if not m:
+        return ""
+    text = m.group(1).strip()
+    if len(text) > _CONTEXT_MAX_LEN:
+        # Cut at last space before limit to avoid broken words
+        text = text[:_CONTEXT_MAX_LEN].rsplit(" ", 1)[0] + "…"
+    return text
+
+
 router = APIRouter(prefix="/api", tags=["status"])
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 DASHBOARD_FILE = Path(__file__).parent.parent / "dashboard.html"
 
 
-def _git_staged_count(project_root: Path) -> int:
-    """Return number of staged files in git, 0 if not a repo."""
+def _git_info(project_root: Path) -> dict[str, Any]:
+    """Return git branch and staged file count, or defaults if not a repo."""
     try:
         from git import InvalidGitRepositoryError, Repo
 
         repo = Repo(project_root)
-        return len(list(repo.index.diff("HEAD")))
+        try:
+            branch = repo.active_branch.name
+        except TypeError:
+            branch = "(detached HEAD)"
+        staged_count = len(list(repo.index.diff("HEAD")))
+        return {"branch": branch, "staged_count": staged_count}
     except Exception:
-        return 0
+        return {"branch": None, "staged_count": 0}
 
 
 def _review_passed(am: ArtifactManager) -> bool | None:
@@ -60,12 +88,14 @@ def _build_status(am: ArtifactManager, project_root: Path) -> dict[str, Any]:
             "total_stages": ts.total_stages,
             "progress_percent": ts.progress_percent,
             "phases": {p.value: s.value for p, s in ts.phases.items()},
+            "context": _extract_context(am, ts.name),
         }
         for ts in state.tasks
     ]
 
     config = load_config(project_root)
     tokens = load_token_usage(project_root)
+    git = _git_info(project_root)
 
     roles_info: dict[str, Any] = {}
     for rname, rc in config.roles.items():
@@ -95,7 +125,8 @@ def _build_status(am: ArtifactManager, project_root: Path) -> dict[str, Any]:
             "roles": roles_info,
         },
         "tokens": tokens,
-        "git_staged_count": _git_staged_count(project_root),
+        "git_branch": git["branch"],
+        "git_staged_count": git["staged_count"],
         "review_passed": _review_passed(am),
         "_provider_labels": {k: v.name for k, v in get_providers().items()},
     }

@@ -29,9 +29,9 @@
     }
 
     function statusColor(status) {
-        if (status === 'complete') return 'var(--gn-bright)';
-        if (['in_progress', 'draft', 'awaiting_review'].includes(status)) return 'var(--yl)';
-        return 'var(--bg2)';
+        if (status === 'complete') return 'var(--ok)';
+        if (['in_progress', 'draft', 'awaiting_review'].includes(status)) return 'var(--warn)';
+        return 'var(--bg-deep)';
     }
 </script>
 
@@ -43,7 +43,7 @@
         {@const Icon = phase.icon}
         <div class="phase-cell">
             {#if i < phaseKeys.length - 1}
-                <div class="phase-line" style="background: linear-gradient(to right, {statusColor(status)}, {statusColor(nextStatus)})"></div>
+                <div class="phase-line" style="background: linear-gradient(to right, {statusColor(status)} 50%, {statusColor(nextStatus)} 50%)"></div>
             {/if}
             <div class="dot {cls}">
                 {#if cls === 'ok'}
@@ -63,7 +63,7 @@
     .phase-bar {
         display: flex;
         align-items: flex-start;
-        margin: 2.5rem 0;
+        margin: 1.2rem 0;
     }
 
     .phase-cell {
@@ -79,8 +79,8 @@
         top: 0.6875rem;
         left: 50%;
         right: -50%;
-        height: 0.125rem;
-        background: var(--bg2);
+        height: 0.2rem;
+        background: var(--bg-deep);
         z-index: 0;
         transition: background .2s;
     }
@@ -93,7 +93,7 @@
         width: 1.5rem;
         height: 1.5rem;
         border-radius: 50%;
-        border: 0.125rem solid var(--bg2);
+        border: 0.125rem solid var(--bg-deep);
         flex-shrink: 0;
         position: relative;
         z-index: 1;
@@ -101,20 +101,20 @@
         align-items: center;
         justify-content: center;
         color: var(--tx);
-        background: var(--bg2);
+        background: var(--bg-deep);
         transition: all .2s;
     }
 
     .dot.ok {
-        background: var(--gn-bright);
-        border-color: var(--gn-bright);
+        background: var(--ok);
+        border-color: var(--ok);
         color: #fff;
     }
 
     .dot.wip {
-        background: var(--yl);
-        border-color: var(--yl);
-        color: var(--bg2);
+        background: var(--warn);
+        border-color: var(--warn);
+        color: var(--bg-deep);
     }
 
     .phase-lbl {
@@ -127,6 +127,6 @@
         transition: color .2s;
     }
 
-    .phase-lbl.lbl-ok { color: var(--gn-bright); }
-    .phase-lbl.lbl-wip { color: var(--yl); }
+    .phase-lbl.lbl-ok { color: var(--ok); }
+    .phase-lbl.lbl-wip { color: var(--warn); }
 </style>

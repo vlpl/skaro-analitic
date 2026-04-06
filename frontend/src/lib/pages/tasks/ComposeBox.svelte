@@ -116,7 +116,7 @@
 		width: 100%;
 		border: 0.0625rem solid var(--bd);
 		border-radius: 1.5rem;
-		background: var(--bg3);
+		background: var(--bg-high);
 		box-shadow: 0 .3rem .7rem rgba(0, 0, 0, .05);
 		transition: all .15s;
 		flex-shrink: 0;
@@ -149,7 +149,7 @@
 	}
 
 	.compose-input::placeholder {
-		color: var(--dm);
+		color: var(--tx-dim);
 	}
 
 	.compose-input:disabled {
@@ -176,7 +176,7 @@
 		border: 0.0625rem solid var(--bd);
 		border-radius: 1rem;
 		background: transparent;
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-size: 0.6875rem;
 		font-family: var(--font-ui);
 		cursor: pointer;
@@ -195,7 +195,7 @@
 
 	.token-estimate {
 		font-size: 0.75rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-family: var(--font-ui);
 		text-align: center;
 		padding: .5rem;
@@ -206,7 +206,7 @@
 		align-items: center;
 		gap: 0.25rem;
 		font-size: 0.75rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-family: var(--font-ui);
 		margin-right: 0.625rem;
 	}
@@ -227,12 +227,12 @@
 	}
 
 	.send-circle:hover:not(:disabled) {
-		background: var(--ac2);
+		background: var(--ac);
 	}
 
 	.send-circle:disabled {
 		background: var(--sf2);
-		color: var(--dm);
+		color: var(--tx-dim);
 		cursor: default;
 	}
 

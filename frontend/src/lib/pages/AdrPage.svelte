@@ -5,6 +5,7 @@
 	import { status } from '$lib/stores/statusStore.js';
 	import { addLog, addError } from '$lib/stores/logStore.js';
 	import { cachedFetch, invalidate } from '$lib/api/cache.js';
+	import { setChatContextMeta, clearChatContextMeta } from '$lib/stores/chatPanelStore.js';
 	import { FolderOpen, AlertTriangle, Loader2, Plus, ChevronLeft, Pencil, Sparkles, ClipboardList } from 'lucide-svelte';
 	import MarkdownContent from '$lib/ui/MarkdownContent.svelte';
 	import MdEditor from '$lib/ui/md-editor/MdEditor.svelte';
@@ -32,6 +33,15 @@
 	let changingStatus = $state(null);
 
 	let hasArchitecture = $derived($status?.has_architecture && $status?.architecture_reviewed);
+
+	// Sync selected ADR with chat panel context.
+	$effect(() => {
+		if (selectedAdr?.number) {
+			setChatContextMeta({ adrNumber: selectedAdr.number });
+		} else {
+			clearChatContextMeta();
+		}
+	});
 
 	onMount(() => { load(); });
 
@@ -119,7 +129,7 @@
 </script>
 
 <div class="main-header">
-	<h2><FolderOpen size={24} /> {$t('adr.title')}</h2>
+	<h2>{$t('adr.title')}</h2>
 	<p>{$t('adr.subtitle')}</p>
 </div>
 
@@ -260,7 +270,7 @@
 	.card.empty {
 		text-align: center;
 		padding: 2rem 1.25rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 	}
 	.card.empty p { margin: 0.25rem 0; }
 	.card.empty .hint { font-size: 0.8125rem; }
@@ -278,7 +288,7 @@
 		padding: 0.4375rem 0.625rem;
 		border: 0.0625rem solid var(--bd);
 		border-radius: var(--r);
-		background: var(--bg2);
+		background: var(--bg-deep);
 		color: var(--tx);
 		font-size: 0.875rem;
 		font-family: inherit;
@@ -304,23 +314,23 @@
 	}
 
 	.adr-table thead {
-		background: var(--sf);
+		background: var(--bd);
 	}
 
 	.adr-table th {
 		padding: 0.5rem 0.75rem;
 		text-align: left;
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-weight: 600;
-		font-size: 0.75rem;
+		font-size: 0.85rem;
 		text-transform: uppercase;
 		letter-spacing: .03em;
-		border-bottom: 0.0625rem solid var(--bd);
+		border-bottom: 1px solid var(--bd);
 	}
 
 	.adr-table td {
 		padding: 0.625rem 0.75rem;
-		border-bottom: 0.0625rem solid var(--bd);
+		border-bottom: 1px solid var(--bd);
 	}
 
 	.adr-table tr:last-child td {
@@ -333,12 +343,12 @@
 	}
 
 	.adr-row:hover {
-		background: var(--bg2);
+		background: var(--bg-deep);
 	}
 
-	.col-num { width: 3.125rem; font-family: var(--font-ui); color: var(--dm); }
+	.col-num { width: 3.125rem; font-family: var(--font-ui); color: var(--tx-dim); }
 	.col-status { width: 6.875rem; }
-	.col-date { width: 6.875rem; font-family: var(--font-ui); color: var(--dm); font-size: 0.8125rem; }
+	.col-date { width: 6.875rem; font-family: var(--font-ui); color: var(--tx-dim); font-size: 0.8125rem; }
 
 	/* ── Status badges ── */
 	.badge {
@@ -351,10 +361,10 @@
 		white-space: nowrap;
 	}
 
-	.badge-proposed { background: rgba(187, 181, 41, .12); color: var(--yl); }
-	.badge-accepted { background: rgba(106, 135, 89, .15); color: var(--gn-bright); }
-	.badge-deprecated { background: rgba(180, 80, 80, .12); color: var(--rd); }
-	.badge-superseded { background: rgba(130, 130, 160, .12); color: var(--dm); }
+	.badge-proposed { background: rgba(187, 181, 41, .12); color: var(--warn); }
+	.badge-accepted { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+	.badge-deprecated { background: rgba(180, 80, 80, .12); color: var(--err); }
+	.badge-superseded { background: rgba(130, 130, 160, .12); color: var(--tx-dim); }
 
 	/* ── Detail view ── */
 	.back-btn {
@@ -399,7 +409,7 @@
 		padding: 0.25rem 0.625rem;
 		border: 0.0625rem solid var(--bd);
 		border-radius: var(--r);
-		background: var(--bg2);
+		background: var(--bg-deep);
 		color: var(--tx);
 		cursor: pointer;
 		font-size: 0.75rem;

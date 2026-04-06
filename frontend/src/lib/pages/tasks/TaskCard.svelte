@@ -48,14 +48,14 @@
 <style>
 	.task-item {
 		cursor: pointer;
-		transition: box-shadow .2s;
+		transition: border .2s;
 		display: block;
 		text-decoration: none;
 		color: inherit;
 	}
 
 	.task-item:hover {
-		box-shadow: 0 .5rem 2rem rgba(0, 0, 0, .1);
+		border: solid 1px var(--sf);
 		text-decoration: none;
 	}
 
@@ -80,7 +80,7 @@
 	}
 
 	.status-icon.complete {
-		color: var(--gn-bright);
+		color: var(--ok);
 	}
 
 	.status-icon.wip {
@@ -91,9 +91,9 @@
 		font-size: 0.6875rem;
 		padding: 0.125rem 0.5rem;
 		border-radius: 0.25rem;
-		background: color-mix(in srgb, var(--ac) 12%, transparent);
+		background: var(--bg-high);
 		border: none;
-		color: var(--ac);
+		color: var(--tx-dim);
 		font-family: var(--font-ui);
 		letter-spacing: 0.019rem;
 		white-space: nowrap;
@@ -116,7 +116,7 @@
 
 	.progress-label {
 		font-size: 0.75rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin-top: 0.25rem;
 		font-family: var(--font-ui);
 	}

@@ -23,7 +23,7 @@
 
 	.check-item {
 		display: flex; align-items: center; gap: 0.5rem;
-		padding: 0.375rem 0.625rem; background: var(--bg2);
+		padding: 0.375rem 0.625rem; background: var(--bg-deep);
 		border-radius: var(--r2); font-size: 0.8125rem;
 	}
 
@@ -31,9 +31,9 @@
 
 	.check-detail {
 		margin-left: auto; font-size: 0.75rem;
-		color: var(--dm); font-family: var(--font-ui);
+		color: var(--tx-dim); font-family: var(--font-ui);
 	}
 
-	:global(.icon-pass) { color: var(--gn-bright); flex-shrink: 0; }
-	:global(.icon-fail) { color: var(--rd); flex-shrink: 0; }
+	:global(.icon-pass) { color: var(--ok); flex-shrink: 0; }
+	:global(.icon-fail) { color: var(--err); flex-shrink: 0; }
 </style>

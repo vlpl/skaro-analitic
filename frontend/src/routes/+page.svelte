@@ -1,5 +1,1 @@
-<script>
-	import DashboardPage from '$lib/pages/DashboardPage.svelte';
-</script>
-
-<DashboardPage />
+<!-- Redirect to /start is handled by +page.js -->

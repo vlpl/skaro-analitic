@@ -24,8 +24,8 @@
 
 	const roles = [
 		{ id: 'architect', icon: Compass, labelKey: 'settings.role_architect', descKey: 'settings.role_architect_desc', color: 'var(--ac)' },
-		{ id: 'coder', icon: Code, labelKey: 'settings.role_coder', descKey: 'settings.role_coder_desc', color: 'var(--gn-bright)' },
-		{ id: 'reviewer', icon: Search, labelKey: 'settings.role_reviewer', descKey: 'settings.role_reviewer_desc', color: 'var(--yl)' },
+		{ id: 'coder', icon: Code, labelKey: 'settings.role_coder', descKey: 'settings.role_coder_desc', color: 'var(--ok)' },
+		{ id: 'reviewer', icon: Search, labelKey: 'settings.role_reviewer', descKey: 'settings.role_reviewer_desc', color: 'var(--warn)' },
 	];
 
 	let tabs = $derived([
@@ -54,7 +54,7 @@
 	let envWorkdir = $state('');
 	let envCommandPrefix = $state('');
 	let envShell = $state('');
-	// Provider names and models come from the backend (providers.yaml)
+	// Provider names come from the backend (providers.yaml)
 	let providerNames = $derived(config?._provider_keys || Object.keys(presets));
 
 	onMount(async () => {
@@ -91,14 +91,15 @@
 		} catch (e) { error = e.message; addError(e.message, 'settings'); }
 	});
 
-	function modelsFor(provider) { return presets[provider]?.models || []; }
-
 	function onProviderChange() {
-		llm.model = modelsFor(llm.provider)[0] || '';
+		// Reset model to provider default when switching providers
+		const preset = presets[llm.provider];
+		llm.model = preset?.model || '';
 	}
 
 	function onRoleProviderChange(rid) {
-		roleOverrides[rid].model = modelsFor(roleOverrides[rid].provider)[0] || '';
+		const preset = presets[roleOverrides[rid].provider];
+		roleOverrides[rid].model = preset?.model || '';
 	}
 
 	async function save() {
@@ -160,7 +161,7 @@
 
 <div class="page-with-tabs">
 	<div class="main-header">
-		<h2><Settings size={24} /> {$t('settings.title')}</h2>
+		<h2>{$t('settings.title')}</h2>
 		<p>{$t('settings.subtitle')}</p>
 	</div>
 
@@ -221,7 +222,7 @@
 						bind:baseUrl={llm.base_url}
 						bind:maxTokens={llm.max_tokens}
 						bind:temperature={llm.temperature}
-						{providerNames} {modelsFor} {presets}
+						{providerNames} {presets}
 						onProviderChange={onProviderChange}
 					/>
 				{:else if activeTab === 'roles'}
@@ -235,7 +236,7 @@
 									bind:override={roleOverrides[role.id]}
 									defaultProvider={llm.provider}
 									defaultModel={llm.model}
-									{providerNames} {modelsFor}
+									{providerNames}
 									onProviderChange={() => onRoleProviderChange(role.id)}
 								/>
 							{/each}
@@ -314,11 +315,11 @@
 	}
 
 	.tab-item:hover {
-		background: var(--bg2);
+		background: var(--bg-deep);
 	}
 
 	.tab-item.active {
-		background: var(--bg2);
+		background: var(--bg-deep);
 		color: var(--tx-bright);
 	}
 
@@ -332,7 +333,7 @@
 
 	.card-desc {
 		font-size: 0.8125rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		margin-bottom: 0.875rem;
 	}
 
@@ -345,7 +346,7 @@
 	.form-field label {
 		display: block;
 		font-size: 0.6875rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		text-transform: uppercase;
 		letter-spacing: 0.03rem;
 		margin-bottom: 0.25rem;
@@ -355,7 +356,7 @@
 	.form-field input {
 		width: 100%;
 		padding: .7rem;
-		background-color: var(--bg2);
+		background-color: var(--bg-deep);
 		border: 0.0625rem solid var(--bg);
 		border-radius: var(--r2);
 		color: var(--tx);
@@ -409,12 +410,12 @@
 	}
 
 	.save-ok {
-		color: var(--gn-bright);
+		color: var(--ok);
 		font-size: 0.8125rem;
 	}
 
 	.save-err {
-		color: var(--rd);
+		color: var(--err);
 		font-size: 0.8125rem;
 	}
 </style>

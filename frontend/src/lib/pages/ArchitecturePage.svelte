@@ -1,16 +1,16 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { api } from '$lib/api/client.js';
 	import { status } from '$lib/stores/statusStore.js';
 	import { addLog, addError } from '$lib/stores/logStore.js';
 	import { cachedFetch, invalidate } from '$lib/api/cache.js';
-	import { Layers, AlertTriangle, Info, CheckCircle, Loader2, Pencil, Sparkles, FolderOpen, MessageSquare } from 'lucide-svelte';
-	import FileTabs from '$lib/ui/FileTabs.svelte';
+	import { Layers, AlertTriangle, Info, Loader2, Pencil, Sparkles, FolderOpen, MessageSquare } from 'lucide-svelte';
 	import ArchActions from './architecture/ArchActions.svelte';
 	import ProposedArchitecture from './architecture/ProposedArchitecture.svelte';
+	import MarkdownContent from '$lib/ui/MarkdownContent.svelte';
 	import MdEditor from '$lib/ui/md-editor/MdEditor.svelte';
-	import FixChat from '$lib/ui/FixChat.svelte';
+	import { openChatPanel } from '$lib/stores/chatPanelStore.js';
 
 	let data = $state(null);
 	let error = $state('');
@@ -22,12 +22,18 @@
 	let generatingAdrs = $state(false);
 	let reviewResult = $state('');
 	let proposedArchitecture = $state('');
-	let activeTab = $state('document');
 	let showEditor = $state(false);
-	let showChat = $state(false);
-	let chatHasMessages = $state(false);
 
-	onMount(() => { load(); });
+	onMount(() => {
+		load();
+		window.addEventListener('skaro:architecture-updated', handleArchUpdated);
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('skaro:architecture-updated', handleArchUpdated);
+	});
+
+	function handleArchUpdated() { load(); }
 
 	async function load() {
 		try {
@@ -38,67 +44,8 @@
 		} catch (e) { error = e.message; addError(e.message, 'architecture'); }
 	}
 
-	// ── Model display for chat ──
-	let modelDisplay = $derived.by(() => {
-		const s = $status;
-		if (!s?.config) return '—';
-		const cfg = s.config;
-		if (cfg.roles?.architect) {
-			const r = cfg.roles.architect;
-			return `${r.provider} / ${r.model}`;
-		}
-		return `${cfg.llm_provider} / ${cfg.llm_model}`;
-	});
-
-	// ── Dynamic placeholder ──
-	let chatPlaceholder = $derived(
-		chatHasMessages ? $t('arch.chat_placeholder_reply') : $t('arch.chat_placeholder_start')
-	);
-
-	// ── Architecture chat callbacks ──
-	async function loadChatConversationFn() {
-		const result = await api.loadArchChatConversation();
-		if (result.conversation?.length > 0) {
-			chatHasMessages = true;
-		}
-		return result;
-	}
-
-	function sendChatMessageFn(text, history, signal) {
-		return api.sendArchChat(text, history, signal);
-	}
-
-	async function applyChatFileFn(filepath, content) {
-		try {
-			const result = await api.saveArchitecture(content);
-			if (result.success) {
-				addLog($t('log.arch_chat_accepted'));
-				invalidate('architecture', 'status');
-				status.set(await api.getStatus());
-				showChat = false;
-				chatHasMessages = false;
-				await load();
-			}
-			return result;
-		} catch (e) {
-			addError(e.message, 'archChat');
-			return { success: false, message: e.message };
-		}
-	}
-
-	async function clearChatConversationFn() {
-		chatHasMessages = false;
-		return api.clearArchChatConversation();
-	}
-
-	function onChatSendSuccess() {
-		chatHasMessages = true;
-		addLog($t('log.arch_chat_response'));
-	}
-
 	function openChat() {
-		showChat = true;
-		activeTab = 'chat';
+		openChatPanel();
 	}
 
 	async function review() {
@@ -116,7 +63,6 @@
 				invalidate('architecture', 'status');
 				status.set(await api.getStatus());
 				await load();
-				if (reviewResult) activeTab = 'review';
 			} else {
 				addError(result.message, 'archReview');
 				reviewResult = result.message;
@@ -199,58 +145,22 @@
 		} catch (e) { addError(e.message, 'archSave'); }
 	}
 
-	async function saveInvariants(content) {
-		try {
-			const result = await api.updateInvariants(content);
-			if (result.success) {
-				addLog($t('editor.doc_saved'));
-				invalidate('architecture', 'status');
-				status.set(await api.getStatus());
-				await load();
-			} else { addError(result.message, 'invSave'); }
-		} catch (e) { addError(e.message, 'invSave'); }
-	}
-
-	// ── Tabs ──
-	let archTabs = $derived.by(() => {
-		const tabs = [];
-		if (showChat && !data?.has_architecture) {
-			tabs.push({ id: 'chat', label: $t('arch.chat_tab') });
-		}
-		if (data?.content) {
-			tabs.push({ id: 'document', label: $t('arch.document') });
-		}
-		if (reviewResult && !reviewing) {
-			tabs.push({ id: 'review', label: $t('arch.review_result') });
-		}
-		if (data?.has_invariants) {
-			tabs.push({ id: 'invariants', label: $t('arch.invariants') });
-		}
-		return tabs;
-	});
-
-	let archTabContent = $derived.by(() => {
-		if (activeTab === 'chat') return '';
-		if (activeTab === 'review') return reviewResult || '';
-		if (activeTab === 'invariants') return data?.invariants || '';
-		return data?.content || '';
-	});
-
-	/** Show review action buttons when review tab is active and there's a review */
 	let showReviewActions = $derived(
-		activeTab === 'review' && reviewResult && !reviewing && !proposedArchitecture
+		reviewResult && !reviewing && !proposedArchitecture
 	);
-
-	$effect(() => {
-		if (archTabs.length > 0 && !archTabs.find(t => t.id === activeTab)) {
-			activeTab = archTabs[0].id;
-		}
-	});
 </script>
 
-<div class="page-with-tabs">
 <div class="main-header">
-	<h2><Layers size={24} /> {$t('arch.title')}</h2>
+	<h2>
+		{$t('arch.title')}
+		{#if data?.has_architecture}
+			{#if data.architecture_reviewed}
+				<span class="status-badge status-badge-ok">{$t('status.approved')}</span>
+			{:else}
+				<span class="status-badge status-badge-pending">{$t('status.not_approved')}</span>
+			{/if}
+		{/if}
+	</h2>
 	<p>{$t('arch.subtitle')}</p>
 </div>
 
@@ -272,7 +182,6 @@
 		</div>
 
 	{:else if data.architecture_reviewed}
-		<div class="alert alert-success"><CheckCircle size={14} /> {$t('arch.approved')}</div>
 		<ArchActions
 			architectureReviewed={true}
 			hasDevplan={$status?.has_devplan}
@@ -283,7 +192,6 @@
 		/>
 
 	{:else}
-		<div class="alert alert-info">{$t('arch.has_arch')}</div>
 		<ArchActions
 			architectureReviewed={false}
 			hasReviewResult={!!reviewResult}
@@ -293,30 +201,6 @@
 		/>
 	{/if}
 
-	{#if archTabs.length > 0}
-		<FileTabs
-			tabs={archTabs}
-			activeTab={activeTab}
-			content={archTabContent}
-			onSelectTab={(id) => activeTab = id}
-		>
-			{#snippet chatSlot()}
-				<FixChat
-					{modelDisplay}
-					errorSource="archChat"
-					autoLoad={true}
-					placeholder={chatPlaceholder}
-					loadConversationFn={loadChatConversationFn}
-					sendMessageFn={sendChatMessageFn}
-					applyFileFn={applyChatFileFn}
-					clearConversationFn={clearChatConversationFn}
-					onSendSuccess={onChatSendSuccess}
-				/>
-			{/snippet}
-		</FileTabs>
-	{/if}
-
-	<!-- Review action buttons — shown below review content -->
 	{#if showReviewActions}
 		<div class="review-actions">
 			<button class="btn btn-primary" disabled={applying} onclick={applyReview}>
@@ -330,23 +214,31 @@
 		</div>
 	{/if}
 
-	<!-- Proposed architecture — from initial review OR from apply-review -->
-	{#if proposedArchitecture && activeTab === 'review'}
+	{#if proposedArchitecture}
 		<ProposedArchitecture
 			content={proposedArchitecture}
 			{accepting} {accepted}
 			onAccept={acceptProposed}
 		/>
 	{/if}
-{/if}
 
-</div>
+	{#if reviewResult && !reviewing}
+		<div class="review-result-section">
+			<h3>{$t('arch.review_result')}</h3>
+			<MarkdownContent content={reviewResult} />
+		</div>
+	{/if}
+
+	{#if data?.content}
+		<MarkdownContent content={data.content} />
+	{/if}
+{/if}
 
 {#if showEditor}
 	<MdEditor
-		content={activeTab === 'invariants' ? (data?.invariants || '') : (data?.content || '')}
+		content={data?.content || ''}
 		onSave={(c) => {
-			if (activeTab === 'invariants') { saveInvariants(c); } else { saveContent(c); }
+			saveContent(c);
 			showEditor = false;
 		}}
 		onClose={() => showEditor = false}
@@ -365,8 +257,23 @@
 	}
 
 	.arch-hint {
-		color: var(--dm);
+		color: var(--tx-dim);
 		font-size: 0.875rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.review-result-section {
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 0.0625rem solid var(--bd);
+	}
+
+	.review-result-section h3 {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--tx-dim);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
 		margin-bottom: 0.75rem;
 	}
 </style>

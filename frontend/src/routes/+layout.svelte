@@ -11,7 +11,7 @@
 	import Sidebar from '$lib/layout/Sidebar.svelte';
 	import Toolbar from '$lib/layout/Toolbar.svelte';
 	import BottomPanel from '$lib/layout/BottomPanel.svelte';
-	import StatusBar from '$lib/layout/StatusBar.svelte';
+	import RightPanel from '$lib/layout/RightPanel.svelte';
 
 	let error = $state('');
 	let { children } = $props();
@@ -25,7 +25,7 @@
 
 	// ── Dynamic browser title ──
 	const TAB_NAV_KEYS = {
-		dashboard: 'nav.dashboard',
+		start: 'nav.start',
 		constitution: 'nav.constitution',
 		architecture: 'nav.architecture',
 		adr: 'nav.adr',
@@ -33,6 +33,7 @@
 		tasks: 'nav.tasks',
 		review: 'nav.review',
 		git: 'nav.git',
+		stats: 'nav.stats',
 		settings: 'nav.settings',
 	};
 
@@ -40,7 +41,7 @@
 
 	let pageTitle = $derived.by(() => {
 		const parts = $page.url.pathname.split('/').filter(Boolean);
-		const section = parts[0] || 'dashboard';
+		const section = parts[0] || 'start';
 		const navKey = TAB_NAV_KEYS[section];
 		const label = navKey ? $t(navKey) : section;
 		if (section === 'tasks' && parts[1]) {
@@ -128,8 +129,8 @@
 			{/if}
 		</main>
 		<BottomPanel />
-		<StatusBar />
 	</div>
+	<RightPanel />
 </div>
 
 <style>
@@ -150,7 +151,7 @@
 	.main {
 		flex: 1;
 		overflow-y: auto;
-		padding: 0 1.5rem;
+		padding: 1.5rem;
 		background: var(--bg);
 		min-height: 0;
 	}
@@ -168,6 +169,6 @@
 	.center-msg {
 		text-align: center;
 		padding: 3.75rem 1.25rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 	}
 </style>

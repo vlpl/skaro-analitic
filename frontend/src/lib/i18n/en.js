@@ -6,6 +6,10 @@ export default {
 	'app.not_initialized': 'Skaro not initialized. Run',
 	'app.not_initialized_cmd': 'skaro init',
 
+	// Status badges
+	'status.approved': 'Approved',
+	'status.not_approved': 'Not approved',
+
 	// Nav
 	'nav.constitution': 'Constitution',
 	'nav.architecture': 'Architecture',
@@ -179,7 +183,7 @@ export default {
 	'task.empty': 'No tasks yet.',
 	'task.empty_hint': 'Go to the Dev Plan tab and generate a development plan, or create tasks manually.',
 	'task.back': 'Back to tasks',
-	'task.detail_title': 'Task: {name}',
+	'task.detail_title': '{name}',
 	'task.implement_progress': 'Implement',
 	'task.all_milestones': 'All',
 	'task.filter_all': 'All',
@@ -206,6 +210,14 @@ export default {
 	'log.task_deleted': 'Task "{name}" deleted',
 	'log.tasks_reordered': 'Task order updated',
 	'log.task_file_saved': '{file} saved for {name}',
+
+	// Task proposals (batch creation from chat)
+	'task_proposal.title': 'Proposed Tasks',
+	'task_proposal.created_title': 'Tasks Created',
+	'task_proposal.confirm': 'Create {n} task(s)',
+	'task_proposal.creating': 'Creating...',
+	'task_proposal.preview_spec': 'Preview specification',
+	'task_proposal.batch_created': '{n} task(s) created',
 
 	// Phase actions
 	'action.clarify': 'Clarify',
@@ -424,6 +436,7 @@ export default {
 	'log.arch_chat_accepted': 'Architecture generated and saved',
 
 	// Settings
+	'nav.start': 'Start',
 	'nav.stats': 'Statistics',
 	'nav.dashboard': 'Dashboard',
 	'nav.settings': 'Settings',
@@ -459,6 +472,14 @@ export default {
 	'settings.default_llm_desc': 'Used for all phases unless a role override is set.',
 	'settings.provider': 'Provider',
 	'settings.model': 'Model',
+	'settings.model_select_placeholder': 'Select model…',
+	'settings.model_search_placeholder': 'Search models…',
+	'settings.model_refresh': 'Refresh models from API',
+	'settings.model_group_curated': 'Curated',
+	'settings.model_group_all': 'All models',
+	'settings.model_no_results': 'No models found',
+	'settings.model_custom': 'Custom',
+	'settings.model_use_custom': 'Use "{model}" as model ID',
 	'settings.api_key': 'API Key',
 	'settings.api_key_placeholder': 'sk-...',
 	'settings.api_key_hint': 'Stored securely in .skaro/secrets.yaml (gitignored)',
@@ -555,6 +576,44 @@ export default {
 	'dash.no_data': 'No data yet.',
 	'dash.tasks_total': 'total',
 
+	// ── Start page ──
+	'start.welcome': 'Project Setup',
+	'start.welcome_desc': 'Follow each step to set up and launch your project. Complete them in order — each step unlocks the next.',
+
+	'start.step_constitution': 'Constitution',
+	'start.step_architecture': 'Architecture',
+	'start.step_adr': 'Architecture Decision Records',
+	'start.step_devplan': 'Development Plan',
+	'start.step_tasks': 'Tasks',
+	'start.step_review': 'Project Review',
+
+	'start.desc_constitution': 'Define the rules, conventions, and constraints for the entire project. The constitution governs coding style, testing strategy, commit conventions, security policies, and what the AI is and isn\'t allowed to do. This document is referenced at every subsequent stage.',
+	'start.desc_architecture': 'Describe the system\'s high-level structure: services, layers, data flows, key technology choices. The AI will review the draft, suggest improvements, and highlight potential issues. Once approved, the architecture becomes the blueprint for all implementation work.',
+	'start.desc_adr': 'Capture critical technical decisions as Architecture Decision Records. Each ADR documents the context, alternatives considered, and rationale. ADRs can be generated automatically from the approved architecture or created manually for new decisions.',
+	'start.desc_devplan': 'Break the project into milestones and tasks with clear dependencies and priorities. The AI generates a plan based on the constitution and architecture, then you refine it. Once confirmed, the plan seeds the task backlog.',
+	'start.desc_tasks': 'Execute the plan task by task. Each task passes through clarify → plan → implement → test phases with AI assistance at every step. Code is generated, reviewed, tested, and committed incrementally.',
+	'start.desc_review': 'Run the full verification suite across the entire project: structural checks, global test commands, cross-file consistency. Fix any issues found and confirm the project meets all quality gates.',
+
+	'start.done': 'Done',
+	'start.in_progress': 'In progress',
+	'start.pending': 'Pending',
+	'start.go_to': 'Continue',
+
+	'start.project_progress': 'Project Progress',
+	'start.tasks_done': 'tasks done',
+	'start.quick_actions': 'Quick Actions',
+	'start.action_current_task': 'Continue current task',
+	'start.action_create_task': 'Create task',
+	'start.action_new_feature': 'New feature',
+	'start.action_run_review': 'Run review',
+	'start.action_open_git': 'Git',
+
+	'start.open_git': 'Open',
+	'start.git_unavailable': 'Git is not available for this project.',
+	'start.git_branch': 'Branch',
+	'start.git_staged': 'Staged',
+	'start.git_changed': 'Changed',
+
 	// ── Git ──
 	'git.title': 'Git',
 	'git.subtitle': 'Stage, commit, push, and manage branches.',
@@ -620,4 +679,41 @@ export default {
 	'autopilot.stopped_desc': 'Stopped by user. Progress is saved — you can restart to continue from where it left off.',
 	'autopilot.tokens_total': 'Total project tokens',
 	'autopilot.llm_thinking': 'LLM thinking...',
+
+	// Chat panel (right sidebar)
+	'chat_panel.toggle': 'Toggle AI Chat',
+	'chat_panel.close': 'Close chat',
+	'chat_panel.open': 'Open AI Chat',
+	'chat_panel.ctx_architecture': 'Architecture Chat',
+	'chat_panel.ctx_review': 'Project Fix',
+	'chat_panel.ctx_constitution': 'Constitution Chat',
+	'chat_panel.ctx_adr': 'ADR Chat',
+	'chat_panel.ctx_adr_detail': 'ADR-{n} Chat',
+	'chat_panel.ctx_devplan': 'Plan Chat',
+	'chat_panel.ctx_features': 'Features Chat',
+	'chat_panel.ctx_tasks': 'Tasks Chat',
+	'chat_panel.response_received': 'AI response received',
+	'chat_panel.placeholder_default': 'Ask about the project...',
+	'chat_panel.placeholder_constitution': 'Discuss or suggest changes to the constitution...',
+	'chat_panel.placeholder_adr': 'Discuss ADRs or propose a new decision...',
+	'chat_panel.placeholder_adr_detail': 'Ask about this ADR...',
+	'chat_panel.placeholder_devplan': 'Discuss the plan or suggest adjustments...',
+	'chat_panel.placeholder_features': 'Discuss or propose new features...',
+	'chat_panel.placeholder_tasks': 'Discuss tasks or create a new one...',
+
+	// Attach menu (compose box)
+	'attach.title': 'Attach context',
+	'attach.from_disk': 'Add files',
+	'attach.from_repo': 'Repository files',
+
+	// Chat model picker
+	'chat_panel.label': 'Chat',
+	'chat_model.default': 'Default',
+	'chat_model.role_architect': 'Architect',
+	'chat_model.role_coder': 'Coder',
+	'chat_model.role_reviewer': 'Reviewer',
+	'chat_model.select': 'Select model',
+
+	// Feature
+	'feature.draft_hint': 'Use the AI Chat panel to describe and plan this feature.',
 };

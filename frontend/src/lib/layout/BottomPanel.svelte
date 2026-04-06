@@ -2,8 +2,8 @@
 	import { t } from '$lib/i18n/index.js';
 	import { page } from '$app/stores';
 	import { logEntries, errorEntries, clearLog, clearErrors, llmActive } from '$lib/stores/logStore.js';
-	import { status, wsConnected } from '$lib/stores/statusStore.js';
-	import { Play, AlertTriangle, Trash2, ChevronUp, ChevronDown, Cpu } from 'lucide-svelte';
+	import { status, wsConnected, updateInfo } from '$lib/stores/statusStore.js';
+	import { Play, AlertTriangle, Trash2, ChevronUp, ChevronDown, Cpu, ArrowUpCircle, GitBranch } from 'lucide-svelte';
 	import LogPane from './LogPane.svelte';
 	import ErrorPane from './ErrorPane.svelte';
 
@@ -34,7 +34,7 @@
 	}
 
 	let storedCollapsed = $state(readStored());
-	let dashboardOverride = $state(/** @type {boolean|null} */ (null));
+	let startOverride = $state(/** @type {boolean|null} */ (null));
 	let savedHeight = $state(200);
 
 	// ── LLM auto-open/close ──
@@ -91,10 +91,10 @@
 
 	let currentTab = $derived.by(() => {
 		const parts = $page.url.pathname.split('/').filter(Boolean);
-		return parts[0] || 'dashboard';
+		return parts[0] || 'start';
 	});
 
-	let onDashboard = $derived(currentTab === 'dashboard');
+	let onStartPage = $derived(currentTab === 'start');
 
 	function getRoleInfo(s, tab) {
 		if (!s?.config) return '—';
@@ -110,9 +110,15 @@
 	}
 
 	let prevTab = $state('');
+
+	let hasUpdate = $derived($updateInfo?.has_update === true);
+	let latestVersion = $derived($updateInfo?.latest_version ?? '');
+	let docsUrl = $derived($updateInfo?.docs_url ?? 'https://docs.skaro.dev/cli/update');
+	let gitBranch = $derived($status?.git_branch ?? null);
+
 	$effect(() => {
 		if (currentTab !== prevTab) {
-			dashboardOverride = null;
+			startOverride = null;
 			prevTab = currentTab;
 		}
 	});
@@ -120,8 +126,8 @@
 	let collapsed = $derived(
 		llmOverride !== null
 			? llmOverride
-			: (onDashboard
-				? (dashboardOverride !== null ? dashboardOverride : true)
+			: (onStartPage
+				? (startOverride !== null ? startOverride : true)
 				: storedCollapsed)
 	);
 
@@ -146,7 +152,7 @@
 	function switchPane(pane) {
 		activePane = pane;
 		if (collapsed) {
-			if (onDashboard) dashboardOverride = false;
+			if (onStartPage) startOverride = false;
 			else { storedCollapsed = false; writeStored(false); }
 		}
 	}
@@ -154,8 +160,8 @@
 	function toggle() {
 		llmOverride = null;
 		const next = !collapsed;
-		if (onDashboard) {
-			dashboardOverride = next;
+		if (onStartPage) {
+			startOverride = next;
 		} else {
 			storedCollapsed = next;
 			writeStored(next);
@@ -179,9 +185,14 @@
 	style="height: {collapsed ? '28px' : effectiveHeight + 'px'}"
 >
 	<div class="tabs-bar">
-		<span class="bp-info ws-status">
+		<span class="bp-info branch-info" title={gitBranch ?? ''}>
 			<span class="status-dot" class:off={!$wsConnected}></span>
-			<span>{$wsConnected ? $t('status.connected') : $t('status.disconnected')}</span>
+			{#if gitBranch}
+				<GitBranch size={11} />
+				<span class="branch-label">{gitBranch}</span>
+			{:else}
+				<span>{$wsConnected ? $t('status.connected') : $t('status.disconnected')}</span>
+			{/if}
 		</span>
 		<span class="bp-separator"></span>
 		<button class="bp-tab" class:active={activePane === 'run'} onclick={() => switchPane('run')}>
@@ -201,6 +212,18 @@
 				<Cpu size={11} />
 				<span>{getRoleInfo($status, currentTab)}</span>
 			</span>
+			{#if hasUpdate}
+				<a
+					class="update-badge"
+					href={docsUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					title={$t('status.update_tooltip', { version: latestVersion })}
+				>
+					<ArrowUpCircle size={11} />
+					<span>{$t('status.update_available', { version: latestVersion })}</span>
+				</a>
+			{/if}
 			<button class="icon-btn" onclick={toggle} title={$t('panel.minimize')}>
 				{#if collapsed}<ChevronUp size={14} />{:else}<ChevronDown size={14} />{/if}
 			</button>
@@ -233,7 +256,7 @@
 	}
 
 	.bottom-panel {
-		background: var(--bg2);
+		background: var(--bg-deep);
 		border-top: 0.0625rem solid var(--bd);
 		display: flex;
 		flex-direction: column;
@@ -253,8 +276,8 @@
 		display: flex;
 		align-items: center;
 		height: 1.75rem;
-		background: var(--sf);
-		border-bottom: 0.0625rem solid var(--bd);
+		background: var(--bg-soft);
+		border-bottom: 0.0625rem solid var(--bg-soft);
 		flex-shrink: 0;
 		padding: 0 0.25rem;
 		user-select: none;
@@ -267,7 +290,7 @@
 		padding: 0 0.75rem;
 		height: 1.75rem;
 		font-size: 0.8125rem;
-		color: var(--dm);
+		color: var(--tx-dim);
 		cursor: pointer;
 		border: none;
 		border-bottom: 0.125rem solid transparent;
@@ -295,8 +318,16 @@
 		min-width: 0;
 	}
 
-	.ws-status {
-		flex-shrink: 0;
+	.branch-info {
+		flex-shrink: 1;
+		min-width: 0;
+	}
+
+	.branch-label {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		min-width: 0;
 	}
 
 	.status-dot {
@@ -327,7 +358,7 @@
 	}
 
 	.count {
-		background: var(--bg2);
+		background: var(--bg-deep);
 		padding: 0 0.3125rem;
 		border-radius: 0.375rem;
 		font-size: 0.6875rem;
@@ -336,7 +367,7 @@
 	}
 
 	.count.has-errors {
-		background: var(--rd-dim);
+		background: var(--err);
 		color: #fff;
 	}
 
@@ -356,7 +387,7 @@
 		justify-content: center;
 		background: none;
 		border: none;
-		color: var(--dm);
+		color: var(--tx-dim);
 		cursor: pointer;
 		border-radius: 0.125rem;
 	}
@@ -370,7 +401,7 @@
 		width: 0.5rem;
 		height: 0.5rem;
 		border-radius: 50%;
-		background: var(--ac2);
+		background: var(--ac);
 		flex-shrink: 0;
 		animation: pulse-glow 1.5s ease-in-out infinite;
 	}
@@ -378,6 +409,26 @@
 	@keyframes pulse-glow {
 		0%, 100% { opacity: 0.4; transform: scale(0.85); }
 		50%      { opacity: 1;   transform: scale(1.1);  }
+	}
+
+	.update-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		background: rgba(187, 181, 41, .15);
+		padding: 0 0.5rem;
+		border-radius: 0.25rem;
+		color: var(--warn);
+		text-decoration: none;
+		font-size: 0.75rem;
+		line-height: 1.25rem;
+		white-space: nowrap;
+		transition: background .15s;
+		cursor: pointer;
+	}
+
+	.update-badge:hover {
+		background: rgba(187, 181, 41, .3);
 	}
 
 	.panel-content {

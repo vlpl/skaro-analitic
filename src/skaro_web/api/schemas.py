@@ -51,6 +51,8 @@ class ArchChatBody(BaseModel):
     """Payload for architecture generation chat."""
     message: str = Field(..., min_length=1)
     conversation: list[dict[str, str]] = Field(default_factory=list)
+    provider_override: str = ""
+    model_override: str = ""
 
 
 class ArchAcceptBody(BaseModel):
@@ -114,6 +116,26 @@ class TaskCreateBody(BaseModel):
     milestone: str = ""
 
 
+class TaskBatchCreateItem(BaseModel):
+    """A single task in a batch create request."""
+    name: str = Field(..., min_length=1)
+    milestone: str = Field(..., min_length=1)
+    spec: str = ""
+
+    @field_validator("name")
+    @classmethod
+    def validate_task_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Task name is required.")
+        return v
+
+
+class TaskBatchCreateBody(BaseModel):
+    """Batch create multiple tasks at once."""
+    tasks: list[TaskBatchCreateItem] = Field(..., min_length=1)
+
+
 class TaskReorderBody(BaseModel):
     """Reorder tasks within a milestone."""
     milestone: str = Field(..., min_length=1)
@@ -168,6 +190,8 @@ class FixBody(BaseModel):
     message: str = Field(..., min_length=1)
     conversation: list[dict[str, str]] = Field(default_factory=list)
     scope_paths: list[str] = Field(default_factory=list)
+    provider_override: str = ""
+    model_override: str = ""
 
 
 class FixFromIssuesBody(BaseModel):
@@ -175,6 +199,8 @@ class FixFromIssuesBody(BaseModel):
     issue_ids: list[str] = Field(default_factory=list)
     conversation: list[dict[str, str]] = Field(default_factory=list)
     scope_paths: list[str] = Field(default_factory=list)
+    provider_override: str = ""
+    model_override: str = ""
 
 
 class ProjectFixBody(BaseModel):
@@ -183,6 +209,8 @@ class ProjectFixBody(BaseModel):
     conversation: list[dict[str, str]] = Field(default_factory=list)
     scope_tasks: list[str] = Field(default_factory=list)
     scope_paths: list[str] = Field(default_factory=list)
+    provider_override: str = ""
+    model_override: str = ""
 
 
 # ═══════════════════════════════════════════════════
@@ -282,11 +310,23 @@ class GitCheckoutBody(BaseModel):
 # Features
 # ═══════════════════════════════════════════════════
 
+class ProjectChatBody(BaseModel):
+    """Payload for universal project chat."""
+    message: str = Field(..., min_length=1)
+    conversation: list[dict[str, str]] = Field(default_factory=list)
+    context_id: str = ""
+    scope_paths: list[str] = Field(default_factory=list)
+    provider_override: str = ""
+    model_override: str = ""
+
+
 class FeatureChatBody(BaseModel):
     """Payload for feature planning chat."""
     message: str = Field(..., min_length=1)
     conversation: list[dict[str, str]] = Field(default_factory=list)
     scope_paths: list[str] = Field(default_factory=list)
+    provider_override: str = ""
+    model_override: str = ""
 
 
 class FeatureUpdateBody(BaseModel):
